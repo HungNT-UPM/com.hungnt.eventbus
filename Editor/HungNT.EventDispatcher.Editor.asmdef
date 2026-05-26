@@ -1,0 +1,21 @@
+{
+    "name": "HungNT.EventDispatcher.Editor",
+    "rootNamespace": "HungNT.EventDispatcher.Editor",
+    "references": [
+        "HungNT.EventDispatcher",
+        "HungNT.Core",
+        "Sirenix.OdinInspector.Attributes",
+        "Sirenix.OdinInspector.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
