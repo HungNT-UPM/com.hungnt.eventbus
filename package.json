@@ -1,0 +1,15 @@
+{
+  "name": "com.hungnt.eventdispatcher",
+  "version": "1.0.5",
+  "displayName": "com.hungnt.eventdispatcher",
+  "description": "Type-safe event dispatcher singleton (MonoSingleton), extensions, and Odin-backed editor inspector. Depends on com.hungnt.core.",
+  "unity": "2022.3",
+  "dependencies": {
+    "com.hungnt.core": "1.0.5"
+  },
+  "author": {
+    "name": "HungNT",
+    "url": "https://github.com/HungNT-UPM"
+  },
+  "license": "MIT"
+}
