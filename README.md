@@ -1,4 +1,4 @@
-# HungNT EventBus (`com.hungnt.eventbus`)
+# com.hungnt.eventbus
 
 Event bus type-safe cho Unity: struct implement **`IEvent`**, đăng ký/lắng nghe qua singleton **`EventBus`**, có extension trên `MonoBehaviour` và inspector Odin xem listener live.
 
