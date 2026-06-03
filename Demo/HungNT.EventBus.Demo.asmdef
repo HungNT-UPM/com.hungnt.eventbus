@@ -1,8 +1,8 @@
 {
-    "name": "HungNT.EventDispatcher.Demo",
-    "rootNamespace": "HungNT.EventDispatcher.Demo",
+    "name": "HungNT.EventBus.Demo",
+    "rootNamespace": "HungNT.EventBus.Demo",
     "references": [
-        "HungNT.EventDispatcher",
+        "HungNT.EventBus",
         "HungNT.Core"
     ],
     "includePlatforms": [],

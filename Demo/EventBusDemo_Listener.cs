@@ -1,28 +1,28 @@
 using UnityEngine;
 
-namespace HungNT.EventDispatcher.Demo
+namespace HungNT.EventBus.Demo
 {
     /// <summary>
     /// Demo: Listener đăng ký / hủy đăng ký events.
-    /// Gán vào GameObject khác với <see cref="EventDispatcherDemo_Dispatcher"/>,
-    /// rồi quan sát Inspector của EventDispatcher để thấy listener live.
+    /// Gán vào GameObject khác với <see cref="EventBusDemo_Dispatcher"/>,
+    /// rồi quan sát Inspector của EventBus để thấy listener live.
     /// </summary>
-    public class EventDispatcherDemo_Listener : MonoBehaviour
+    public class EventBusDemo_Listener : MonoBehaviour
     {
         // ── Cách 1: Register/Unregister thủ công qua singleton ───────────────
 
         private void OnEnable()
         {
-            EventDispatcher.Instance.Register<OnGameStart>(OnGameStart);
-            EventDispatcher.Instance.Register<OnGameWin>(OnGameWin);
-            EventDispatcher.Instance.Register<OnCoinChanged>(OnCoinChanged);
+            EventBus.Instance.Register<OnGameStart>(OnGameStart);
+            EventBus.Instance.Register<OnGameWin>(OnGameWin);
+            EventBus.Instance.Register<OnCoinChanged>(OnCoinChanged);
         }
 
         private void OnDisable()
         {
-            EventDispatcher.Instance.Unregister<OnGameStart>(OnGameStart);
-            EventDispatcher.Instance.Unregister<OnGameWin>(OnGameWin);
-            EventDispatcher.Instance.Unregister<OnCoinChanged>(OnCoinChanged);
+            EventBus.Instance.Unregister<OnGameStart>(OnGameStart);
+            EventBus.Instance.Unregister<OnGameWin>(OnGameWin);
+            EventBus.Instance.Unregister<OnCoinChanged>(OnCoinChanged);
         }
 
         // ── Cách 2: Register/Unregister qua Extension Methods ────────────────

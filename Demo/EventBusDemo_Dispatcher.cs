@@ -1,26 +1,26 @@
 using UnityEngine;
 
-namespace HungNT.EventDispatcher.Demo
+namespace HungNT.EventBus.Demo
 {
     /// <summary>
-    /// Demo: Dispatch events qua EventDispatcher.
+    /// Demo: Dispatch events qua EventBus.
     /// Gán vào một GameObject rồi nhấn các nút trong Inspector (Play Mode).
     /// </summary>
-    public class EventDispatcherDemo_Dispatcher : MonoBehaviour
+    public class EventBusDemo_Dispatcher : MonoBehaviour
     {
         // ── Cách 1: Dùng trực tiếp qua singleton ─────────────────────────────
 
         [ContextMenu("Dispatch OnGameStart (singleton)")]
         public void DispatchGameStart()
-            => EventDispatcher.Instance.Dispatch<OnGameStart>();
+            => EventBus.Instance.Dispatch<OnGameStart>();
 
         [ContextMenu("Dispatch OnGameWin (singleton)")]
         public void DispatchGameWin()
-            => EventDispatcher.Instance.Dispatch<OnGameWin>();
+            => EventBus.Instance.Dispatch<OnGameWin>();
 
         [ContextMenu("Dispatch OnCoinChanged (singleton)")]
         public void DispatchCoinChanged()
-            => EventDispatcher.Instance.Dispatch(new OnCoinChanged { OldValue = 50, NewValue = 150 });
+            => EventBus.Instance.Dispatch(new OnCoinChanged { OldValue = 50, NewValue = 150 });
 
         // ── Cách 2: Dùng Extension Methods (this.Dispatch) ────────────────────
 

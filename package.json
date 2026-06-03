@@ -1,8 +1,8 @@
 {
-  "name": "com.hungnt.eventdispatcher",
-  "version": "1.0.6",
-  "displayName": "com.hungnt.eventdispatcher",
-  "description": "Type-safe event dispatcher singleton (MonoSingleton), extensions, and Odin-backed editor inspector. Depends on com.hungnt.core.",
+  "name": "com.hungnt.eventbus",
+  "version": "1.0.7",
+  "displayName": "HungNT EventBus",
+  "description": "Type-safe event bus singleton (MonoSingleton), extensions, and Odin-backed editor inspector. Depends on com.hungnt.core.",
   "unity": "2022.3",
   "dependencies": {
     "com.hungnt.core": "1.0.6"

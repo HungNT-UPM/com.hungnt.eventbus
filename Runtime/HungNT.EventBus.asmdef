@@ -1,13 +1,10 @@
 {
-    "name": "HungNT.EventDispatcher.Editor",
-    "rootNamespace": "HungNT.EventDispatcher.Editor",
+    "name": "HungNT.EventBus",
+    "rootNamespace": "HungNT.EventBus",
     "references": [
-        "HungNT.EventDispatcher",
         "HungNT.Core"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

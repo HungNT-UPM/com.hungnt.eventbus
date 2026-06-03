@@ -1,4 +1,4 @@
-namespace HungNT.EventDispatcher
+namespace HungNT.EventBus
 {
     /// <summary>
     /// Marker interface for all typed game events.

@@ -1,4 +1,4 @@
-namespace HungNT.EventDispatcher.Demo
+namespace HungNT.EventBus.Demo
 {
     // ── Custom event chỉ dùng trong Demo ─────────────────────────────────────
 

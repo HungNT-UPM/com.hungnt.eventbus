@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
 
-namespace HungNT.EventDispatcher
+namespace HungNT.EventBus
 {
     /// <summary>
-    /// Type-safe event dispatcher (singleton).
+    /// Global event bus (singleton): type-safe pub/sub dùng struct events.
     /// Tự bỏ qua listener bị destroy khi Dispatch, không crash.
     /// Nên Unregister trong OnDestroy để giữ list gọn.
     /// </summary>
-    public class EventDispatcher : MonoSingleton<EventDispatcher>
+    public class EventBus : MonoSingleton<EventBus>
     {
-        // Key = event Type, Value = multicast Delegate (Action<TEvent>)
-        private readonly Dictionary<Type, Delegate> _handlers = new();
+        // Dùng List<Delegate> thay multicast delegate để tránh alloc trên dispatch path (không gọi GetInvocationList)
+        private readonly Dictionary<Type, List<Delegate>> _handlers = new();
 
         protected override void OnDestroy()
         {
@@ -19,7 +19,7 @@ namespace HungNT.EventDispatcher
             _handlers.Clear();
         }
 
-        // ── Register / Unregister ────────────────────────────────────────────
+        #region === REGISTER / UNREGISTER ===
 
         /// <summary>Đăng ký lắng nghe <typeparamref name="TEvent"/>.</summary>
         public void Register<TEvent>(Action<TEvent> listener) where TEvent : IEvent
@@ -31,9 +31,13 @@ namespace HungNT.EventDispatcher
             }
 
             var type = typeof(TEvent);
-            _handlers[type] = _handlers.TryGetValue(type, out var existing)
-                ? Delegate.Combine(existing, listener)
-                : listener;
+            if (!_handlers.TryGetValue(type, out var list))
+            {
+                list = new List<Delegate>();
+                _handlers[type] = list;
+            }
+
+            list.Add(listener);
         }
 
         /// <summary>Hủy đăng ký lắng nghe <typeparamref name="TEvent"/>.</summary>
@@ -42,27 +46,31 @@ namespace HungNT.EventDispatcher
             if (listener == null) return;
 
             var type = typeof(TEvent);
-            if (!_handlers.TryGetValue(type, out var existing)) return;
+            if (!_handlers.TryGetValue(type, out var list)) return;
 
-            var updated = Delegate.Remove(existing, listener);
-            if (updated == null) _handlers.Remove(type);
-            else _handlers[type] = updated;
+            list.Remove(listener);
+            if (list.Count == 0)
+                _handlers.Remove(type);
         }
 
-        // ── Dispatch ─────────────────────────────────────────────────────────
+        #endregion
+
+        #region === DISPATCH ===
 
         /// <summary>Gửi event có data tới tất cả listener đã đăng ký.</summary>
         public void Dispatch<TEvent>(TEvent evt) where TEvent : IEvent
         {
-            if (!_handlers.TryGetValue(typeof(TEvent), out var del)) return;
-            SafeInvoke(del, evt);
+            if (!_handlers.TryGetValue(typeof(TEvent), out var list)) return;
+            SafeInvoke(list, evt);
         }
 
         /// <summary>Gửi signal event không có data.</summary>
         public void Dispatch<TEvent>() where TEvent : struct, IEvent
             => Dispatch(default(TEvent));
 
-        // ── Utilities ────────────────────────────────────────────────────────
+        #endregion
+
+        #region === UTILITIES ===
 
         /// <summary>Xóa tất cả listener của một event type.</summary>
         public void ClearEvent<TEvent>() where TEvent : IEvent
@@ -75,11 +83,11 @@ namespace HungNT.EventDispatcher
             this.Log("All listeners cleared.".Color("orange"));
         }
 
-        // ── Debug / Editor ───────────────────────────────────────────────────
+        #endregion
 
-        /// <summary>
-        /// Snapshot tất cả listener đang đăng ký — dùng bởi EventDispatcherEditor.
-        /// </summary>
+        #region === DEBUG / EDITOR ===
+
+        /// <summary>Snapshot tất cả listener đang đăng ký — dùng bởi EventBusEditor.</summary>
         public List<ListenerDebugEntry> GetDebugSnapshot()
         {
             var result = new List<ListenerDebugEntry>();
@@ -88,11 +96,10 @@ namespace HungNT.EventDispatcher
             {
                 if (kvp.Value == null) continue;
 
-                foreach (var d in kvp.Value.GetInvocationList())
+                foreach (var d in kvp.Value)
                 {
                     bool isDestroyed = d.Target is UnityEngine.Object uObj && uObj == null;
 
-                    // Lấy reference thực của object register (nếu là UnityEngine.Object)
                     UnityEngine.Object registeredObj = null;
                     if (!isDestroyed && d.Target is UnityEngine.Object obj)
                         registeredObj = obj;
@@ -128,12 +135,13 @@ namespace HungNT.EventDispatcher
                     : $"{EventName} ← {TargetName}.{MethodName}";
         }
 
-        // ── Safe invoke ──────────────────────────────────────────────────────
+        #endregion
 
-        private static void SafeInvoke<TEvent>(Delegate del, TEvent evt)
+        private static void SafeInvoke<TEvent>(List<Delegate> list, TEvent evt)
         {
-            foreach (var d in del.GetInvocationList())
+            for (int i = 0; i < list.Count; i++)
             {
+                var d = list[i];
                 if (d.Target is UnityEngine.Object unityObj && unityObj == null)
                     continue;
 
@@ -143,7 +151,7 @@ namespace HungNT.EventDispatcher
                 }
                 catch (Exception ex)
                 {
-                    DebugEx.LogError($"[{nameof(EventDispatcher)}] Exception in {d.Target?.GetType().Name}.{d.Method.Name}: {ex}");
+                    DebugEx.LogError($"[{nameof(EventBus)}] Exception in {d.Target?.GetType().Name}.{d.Method.Name}: {ex}");
                 }
             }
         }

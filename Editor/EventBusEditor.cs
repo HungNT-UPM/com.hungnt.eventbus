@@ -3,15 +3,15 @@ using UnityEditor;
 using UnityEngine;
 using Sirenix.OdinInspector.Editor;
 
-namespace HungNT.EventDispatcher.Editor
+namespace HungNT.EventBus.Editor
 {
     /// <summary>
-    /// Custom Inspector cho EventDispatcher.
+    /// Custom Inspector cho EventBus.
     /// Dùng OdinEditor nếu có Odin, fallback về IMGUI thuần nếu không.
     /// Hiển thị live tất cả listener theo event — repaint mỗi 0.5s khi Play.
     /// </summary>
-    [CustomEditor(typeof(EventDispatcher))]
-    public class EventDispatcherEditor : OdinEditor
+    [CustomEditor(typeof(EventBus))]
+    public class EventBusEditor : OdinEditor
     {
         private readonly Dictionary<string, bool> _foldouts = new();
         private double _lastRepaintTime;
@@ -39,7 +39,7 @@ namespace HungNT.EventDispatcher.Editor
 
             InitStyles();
 
-            var dispatcher = (EventDispatcher)target;
+            var dispatcher = (EventBus)target;
             var snapshot = dispatcher.GetDebugSnapshot();
 
             DrawHeader(snapshot.Count);
@@ -79,7 +79,7 @@ namespace HungNT.EventDispatcher.Editor
             EditorGUILayout.Space(8);
         }
 
-        private void DrawEventGroup(string eventName, List<EventDispatcher.ListenerDebugEntry> listeners)
+        private void DrawEventGroup(string eventName, List<EventBus.ListenerDebugEntry> listeners)
         {
             if (!_foldouts.ContainsKey(eventName))
                 _foldouts[eventName] = true;
@@ -110,7 +110,7 @@ namespace HungNT.EventDispatcher.Editor
             EditorGUILayout.Space(2);
         }
 
-        private void DrawListenerRow(EventDispatcher.ListenerDebugEntry entry)
+        private void DrawListenerRow(EventBus.ListenerDebugEntry entry)
         {
             var style = entry.IsDestroyed ? _destroyedStyle : _listenerStyle;
             var icon = entry.IsDestroyed ? "⚠ " : "→ ";
@@ -138,14 +138,14 @@ namespace HungNT.EventDispatcher.Editor
 
         // ── Grouping ─────────────────────────────────────────────────────────
 
-        private static Dictionary<string, List<EventDispatcher.ListenerDebugEntry>> GroupByEvent(
-            List<EventDispatcher.ListenerDebugEntry> snapshot)
+        private static Dictionary<string, List<EventBus.ListenerDebugEntry>> GroupByEvent(
+            List<EventBus.ListenerDebugEntry> snapshot)
         {
-            var grouped = new Dictionary<string, List<EventDispatcher.ListenerDebugEntry>>();
+            var grouped = new Dictionary<string, List<EventBus.ListenerDebugEntry>>();
             foreach (var entry in snapshot)
             {
                 if (!grouped.ContainsKey(entry.EventName))
-                    grouped[entry.EventName] = new List<EventDispatcher.ListenerDebugEntry>();
+                    grouped[entry.EventName] = new List<EventBus.ListenerDebugEntry>();
                 grouped[entry.EventName].Add(entry);
             }
             return grouped;
