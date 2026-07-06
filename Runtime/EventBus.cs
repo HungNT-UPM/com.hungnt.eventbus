@@ -13,15 +13,21 @@ namespace HungNT.EventBus
         // Dùng List<Delegate> thay multicast delegate để tránh alloc trên dispatch path (không gọi GetInvocationList)
         private readonly Dictionary<Type, List<Delegate>> _handlers = new();
 
+        // Unregister trong lúc đang Dispatch: null-out phần tử (không Remove — Remove làm shift index,
+        // listener kế tiếp bị skip). List bẩn được compact khi dispatch ngoài cùng kết thúc.
+        private readonly HashSet<Type> _dirtyTypes = new();
+        private int _dispatchDepth;
+
         protected override void OnDestroy()
         {
             base.OnDestroy();
             _handlers.Clear();
+            _dirtyTypes.Clear();
         }
 
         #region === REGISTER / UNREGISTER ===
 
-        /// <summary>Đăng ký lắng nghe <typeparamref name="TEvent"/>.</summary>
+        /// <summary>Đăng ký lắng nghe <typeparamref name="TEvent"/>. Register trong lúc dispatch: nhận event từ lần dispatch sau.</summary>
         public void Register<TEvent>(Action<TEvent> listener) where TEvent : IEvent
         {
             if (listener == null)
@@ -40,7 +46,7 @@ namespace HungNT.EventBus
             list.Add(listener);
         }
 
-        /// <summary>Hủy đăng ký lắng nghe <typeparamref name="TEvent"/>.</summary>
+        /// <summary>Hủy đăng ký lắng nghe <typeparamref name="TEvent"/>. An toàn khi gọi ngay trong listener đang được dispatch.</summary>
         public void Unregister<TEvent>(Action<TEvent> listener) where TEvent : IEvent
         {
             if (listener == null) return;
@@ -48,7 +54,17 @@ namespace HungNT.EventBus
             var type = typeof(TEvent);
             if (!_handlers.TryGetValue(type, out var list)) return;
 
-            list.Remove(listener);
+            var index = list.IndexOf(listener);
+            if (index < 0) return;
+
+            if (_dispatchDepth > 0)
+            {
+                list[index] = null;
+                _dirtyTypes.Add(type);
+                return;
+            }
+
+            list.RemoveAt(index);
             if (list.Count == 0)
                 _handlers.Remove(type);
         }
@@ -61,7 +77,36 @@ namespace HungNT.EventBus
         public void Dispatch<TEvent>(TEvent evt) where TEvent : IEvent
         {
             if (!_handlers.TryGetValue(typeof(TEvent), out var list)) return;
-            SafeInvoke(list, evt);
+
+            _dispatchDepth++;
+            try
+            {
+                // Chốt count: listener register thêm trong lúc dispatch sẽ nhận từ lần sau.
+                var count = list.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var d = list[i];
+                    if (d == null)
+                        continue;
+                    if (d.Target is UnityEngine.Object unityObj && unityObj == null)
+                        continue;
+
+                    try
+                    {
+                        ((Action<TEvent>)d).Invoke(evt);
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugEx.LogError($"[{nameof(EventBus)}] Exception in {d.Target?.GetType().Name}.{d.Method.Name}: {ex}");
+                    }
+                }
+            }
+            finally
+            {
+                _dispatchDepth--;
+                if (_dispatchDepth == 0 && _dirtyTypes.Count > 0)
+                    CompactDirtyLists();
+            }
         }
 
         /// <summary>Gửi signal event không có data.</summary>
@@ -74,12 +119,17 @@ namespace HungNT.EventBus
 
         /// <summary>Xóa tất cả listener của một event type.</summary>
         public void ClearEvent<TEvent>() where TEvent : IEvent
-            => _handlers.Remove(typeof(TEvent));
+        {
+            var type = typeof(TEvent);
+            _handlers.Remove(type);
+            _dirtyTypes.Remove(type);
+        }
 
         /// <summary>Xóa toàn bộ listener.</summary>
         public void ClearAll()
         {
             _handlers.Clear();
+            _dirtyTypes.Clear();
             this.Log("All listeners cleared.".Color("orange"));
         }
 
@@ -98,6 +148,8 @@ namespace HungNT.EventBus
 
                 foreach (var d in kvp.Value)
                 {
+                    if (d == null) continue; // slot bị null-out trong lúc dispatch, chưa compact
+
                     bool isDestroyed = d.Target is UnityEngine.Object uObj && uObj == null;
 
                     UnityEngine.Object registeredObj = null;
@@ -137,23 +189,20 @@ namespace HungNT.EventBus
 
         #endregion
 
-        private static void SafeInvoke<TEvent>(List<Delegate> list, TEvent evt)
+        /// <summary>Dọn các slot bị null-out bởi Unregister-trong-dispatch. Chỉ chạy khi không còn dispatch nào lồng nhau.</summary>
+        private void CompactDirtyLists()
         {
-            for (int i = 0; i < list.Count; i++)
+            foreach (var type in _dirtyTypes)
             {
-                var d = list[i];
-                if (d.Target is UnityEngine.Object unityObj && unityObj == null)
+                if (!_handlers.TryGetValue(type, out var list))
                     continue;
 
-                try
-                {
-                    ((Action<TEvent>)d).Invoke(evt);
-                }
-                catch (Exception ex)
-                {
-                    DebugEx.LogError($"[{nameof(EventBus)}] Exception in {d.Target?.GetType().Name}.{d.Method.Name}: {ex}");
-                }
+                list.RemoveAll(d => d == null);
+                if (list.Count == 0)
+                    _handlers.Remove(type);
             }
+
+            _dirtyTypes.Clear();
         }
     }
 }
